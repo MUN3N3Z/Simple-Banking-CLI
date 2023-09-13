@@ -40,3 +40,11 @@ class Bank():
         """ Print account types, numbers and balances for all accounts"""
         for account in self._accounts:
             self._print_account_summary(account._get_account_number())   
+
+    def _transact(self, account_number:int, amount:str, date: str) -> None:
+        """ Process a transaction """
+        self._accounts[account_number - 1]._process_transaction(amount, date)
+        return
+    
+    def _list_transactions(self, account_number:int) -> None:
+        self._accounts[account_number - 1]._print_transactions()

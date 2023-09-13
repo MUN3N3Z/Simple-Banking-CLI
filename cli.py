@@ -85,10 +85,21 @@ class BankCLI():
         self._current_account = int(input(">"))
         return
 
-    def _add_transaction(self):
-        pass
+    def _add_transaction(self) -> None:
+        """ Register a transaction with selected account """
+        # Get user input for transaction details
+        print("Amount?")
+        amount = input(">")
+        print("Date? YYYY-MM-DD")
+        date = input(">")
+        self._bank._transact(self._current_account, amount, date)
+        return
+        
     def _list_transactions(self):
-        pass
+        """ Print out all transactions for an account, sorted by date """
+        self._bank._list_transactions(self._current_account)
+        return
+
     def _interest_and_fees(self):
         pass
     def _save(self):
