@@ -1,6 +1,6 @@
 from bank import Bank
 from checkingAccount import CheckingAccount
-from savingsAccount import SavingsAccount
+from pickle import dump, load
 class BankCLI():
     """ Display menu options for banking services """
     def __init__(self) -> None:
@@ -90,7 +90,7 @@ class BankCLI():
         # Get user input for transaction details
         print("Amount?")
         amount = input(">")
-        print("Date? YYYY-MM-DD")
+        print("Date? (YYYY-MM-DD)")
         date = input(">")
         self._bank._transact(self._current_account, amount, date)
         return
@@ -101,11 +101,24 @@ class BankCLI():
         return
 
     def _interest_and_fees(self):
-        pass
+        """ Apply interest and fees to respective accounts """
+        self._bank._apply_interest_fees(self._current_account)
+        return 
+    
     def _save(self):
-        pass
+        """ Pickle the bank object """
+        # Pickle bank object
+        with open("bank.pkl", "wb") as file:
+            dump(self._bank, file)
+        return
+    
     def _load(self):
-        pass
+        # Load pickled object
+        with open("bank.pkl", "rb") as file:
+            self._bank = load(file)
+        self._current_account = None
+        return
+    
     def _quit(self):
         """ Leave the CLI """
         exit(0)

@@ -48,3 +48,7 @@ class Bank():
     
     def _list_transactions(self, account_number:int) -> None:
         self._accounts[account_number - 1]._print_transactions()
+
+    def _apply_interest_fees(self, account_number:int) -> None:
+        """ Apply interest and fees to respective accounts """
+        self._accounts[account_number - 1]._compute_interest_fees()

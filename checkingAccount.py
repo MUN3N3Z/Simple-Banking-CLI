@@ -1,10 +1,11 @@
 from transaction import Transaction
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
+
 class CheckingAccount():
     """ Accounts with less interest and fewer transaction limits """
     def __init__(self, account_number: int) -> None:
-        self._transactions = [Transaction]
+        self._transactions = []
         self._balance = Decimal()
         self._account_number = account_number
 
@@ -27,7 +28,6 @@ class CheckingAccount():
     def _process_transaction(self, amount:str, date:str) -> None:
         """ Update account balance and transaction history """
         # Conditionaly update account balance
-        print("CHECKING")
         if (Decimal(amount) < 0):
             prospective_balance = self._balance + Decimal(amount)
             if (prospective_balance >= 0):
@@ -46,4 +46,24 @@ class CheckingAccount():
         self._transactions.sort()
         for transaction in self._transactions:
             print(transaction)
+
+    def _compute_interest_fees(self):
+        """ Compute and apply interest and fees for checking account """
+        # Find most recent transaction date
+        transaction_dates = (transaction._transaction_date()[0] for transaction in self._transactions)
+        most_recent_transaction_date = max([datetime.strptime(transaction_date, "%Y-%m-%d") for transaction_date in transaction_dates])
+        last_day_of_next_month = datetime(most_recent_transaction_date.year, most_recent_transaction_date.month + 1, 1) - timedelta(days=1)
+        # Compute and register interest
+        interest_fees = Decimal(0.0008) * self._balance
+        self._register_transaction(str(interest_fees), str(last_day_of_next_month.date()))
+        # Conditionally apply fees
+        if (self._balance < 100):
+            self._register_transaction("-5.44", str(last_day_of_next_month.date()))
+            self._balance -= Decimal(5.44)
+        
+        # Update account balance
+        self._balance += interest_fees
+
+        return
+        
         
