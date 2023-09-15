@@ -1,21 +1,20 @@
 from transaction import Transaction
 from decimal import Decimal
 from datetime import datetime, timedelta
+from account import Account
 
-class CheckingAccount():
+class CheckingAccount(Account):
     """ Accounts with less interest and fewer transaction limits """
     def __init__(self, account_number: int) -> None:
-        self._transactions = []
-        self._balance = Decimal()
-        self._account_number = account_number
-
-    def _get_account_balance(self) -> int:
-        """ Return account balance for current account """
-        return self._balance
+        super().__init__(account_number)
+        
+    @property
+    def balance(self):
+        return super()._get_account_balance()
     
-    def _get_account_number(self) -> int:
-        """ Return account number for current account """
-        return self._account_number
+    @property
+    def account_number(self):
+        return super()._get_account_number()
     
     def _register_transaction(self, amount:str, date:str) -> None:
         """ Update account's transactio history """
@@ -40,12 +39,6 @@ class CheckingAccount():
             self._register_transaction(amount, date)
 
         return
-    
-    def _print_transactions(self) -> None:
-        """ Display all recorded transactions for the acount """
-        self._transactions.sort()
-        for transaction in self._transactions:
-            print(transaction)
 
     def _compute_interest_fees(self):
         """ Compute and apply interest and fees for checking account """

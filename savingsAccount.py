@@ -2,24 +2,22 @@ from transaction import Transaction
 from decimal import Decimal
 from datetime import datetime, timedelta
 from collections import defaultdict
+from account import Account
 
-class SavingsAccount():
+class SavingsAccount(Account):
     """Accounts with more interest and more transactions limits"""
     def __init__(self, account_number) -> None:
-        self._transactions = []
-        self._balance = Decimal()
-        self._account_number = account_number
+        super().__init__(account_number)
         self._transaction_dates = defaultdict(int)
         self._transaction_months = defaultdict(int)
+    @property
+    def balance(self):
+        return super()._get_account_balance()
+    
+    @property
+    def account_number(self):
+        return super()._get_account_number()
 
-    def _get_account_balance(self) -> int:
-        """ Return account balance for current account """
-        return self._balance
-    
-    def _get_account_number(self) -> int:
-        """ Return account number for current account """
-        return self._account_number
-    
     def _register_transaction(self, amount:str, date:str) -> None:
         """ Update account's transactio history """
         new_transaction = Transaction()
@@ -48,12 +46,6 @@ class SavingsAccount():
                 self._balance += Decimal(amount)
                 self._register_transaction(amount, date)
         return
-    
-    def _print_transactions(self) -> None:
-        """ Display all recorded transactions for the acount """
-        self._transactions.sort()
-        for transaction in self._transactions:
-            print(transaction)
 
     def _compute_interest_fees(self):
         """ Compute and apply interest for savings account """

@@ -23,7 +23,7 @@ class Bank():
     
     def _account_balance(self, account_number:int) -> int:
         """ Return account balance for account with account number: account_number """
-        return self._accounts[account_number - 1]._get_account_balance()
+        return self._accounts[account_number - 1].balance
     
     def _find_account(self, account_number:int):
         """ Return an instance of an account object with account_number """
