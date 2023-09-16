@@ -50,9 +50,9 @@ class BankCLI():
         # Display currently selected account
         if (self._current_account):
             if (isinstance(self._bank._find_account(self._current_account), (CheckingAccount))):
-                print("Currently selected account: Checking#{0}, balance: ${1}".format(f'{self._current_account:09d}', f'{self._bank._account_balance(self._current_account):,.2f}'))
+                print("Currently selected account: Checking#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank._account_balance(self._current_account):,.2f}'))
             else:
-                print("Currently selected account: Savings#{0}, balance: ${1}".format(f'{self._current_account:09d}', f'{self._bank._account_balance(self._current_account):,.2f}'))   
+                print("Currently selected account: Savings#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank._account_balance(self._current_account):,.2f}'))   
         else:
             print("Currently selected account: None")
         # Display menu items

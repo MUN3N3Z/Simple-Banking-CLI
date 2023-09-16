@@ -1,5 +1,5 @@
 from transaction import Transaction
-from decimal import Decimal
+import decimal
 from datetime import datetime, timedelta
 from collections import defaultdict
 from account import Account
@@ -10,6 +10,7 @@ class SavingsAccount(Account):
         super().__init__(account_number)
         self._transaction_dates = defaultdict(int)
         self._transaction_months = defaultdict(int)
+        decimal.getcontext().rounding = decimal.ROUND_HALF_UP
     @property
     def balance(self):
         return super()._get_account_balance()
@@ -35,21 +36,21 @@ class SavingsAccount(Account):
             return
         else:
             # Conditionaly update account balance
-            if (Decimal(amount) < 0):
-                prospective_balance = self._balance + Decimal(amount)
+            if (decimal.Decimal(amount) < 0):
+                prospective_balance = self._balance + decimal.Decimal(amount)
                 if (prospective_balance >= 0):
                     self._balance = prospective_balance
                     self._register_transaction(amount, date)
                 else:
                     return
             else:
-                self._balance += Decimal(amount)
+                self._balance += decimal.Decimal(amount)
                 self._register_transaction(amount, date)
         return
 
     def _compute_interest_fees(self):
         """ Compute and apply interest for savings account """
-        interest = Decimal(0.0041) * self._balance
+        interest = decimal.Decimal(0.0041) * self._balance
         # Find most recent transaction date
         transaction_dates = self._transaction_dates.keys()
         most_recent_transaction_date = max([datetime.strptime(transaction_date, "%Y-%m-%d") for transaction_date in transaction_dates])
