@@ -1,6 +1,8 @@
 from sys import exit
 from checkingAccount import CheckingAccount
 from savingsAccount import SavingsAccount
+from datetime import datetime
+from decimal import Decimal
 
 class Bank():
     """ Top-level management class """
@@ -27,7 +29,8 @@ class Bank():
     
     def _find_account(self, account_number:int):
         """ Return an instance of an account object with account_number """
-        return self._accounts[account_number - 1]
+        if (account_number):
+            return self._accounts[account_number - 1]
     
     def _print_account_summary(self, account_number:int) -> None:
         """ Print account types, numbers and balances """
@@ -41,7 +44,7 @@ class Bank():
         for account in self._accounts:
             self._print_account_summary(account._get_account_number())   
 
-    def _transact(self, account_number:int, amount:str, date: str) -> None:
+    def _transact(self, account_number:int, amount:Decimal, date: datetime) -> None:
         """ Process a transaction """
         self._accounts[account_number - 1]._process_transaction(amount, date)
         return

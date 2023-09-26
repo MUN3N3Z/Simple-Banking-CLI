@@ -1,6 +1,5 @@
 from decimal import Decimal
-from transaction import Transaction
-
+from datetime import datetime
 class Account():
     def __init__(self, account_number:int) -> None:
         self._transactions = []
@@ -20,4 +19,22 @@ class Account():
         self._transactions.sort()
         for transaction in self._transactions:
             print(transaction)
-    
+
+    def check_transaction_date(self, date: datetime) -> (bool, datetime):
+        """ Ensures transaction is chronologically correct """
+        if (len(self._transactions) > 0):
+            most_recent_transaction_date = max([i._transaction_date() for i in self._transactions])
+            if(date < most_recent_transaction_date):
+                return (False, most_recent_transaction_date)
+            else:
+                return (True, most_recent_transaction_date)
+        else:
+            return (True, date)
+        
+    def check_interest_fees(self, date:datetime) -> bool:
+        """ Ensures interest and fees have not applied before"""
+        interest_fees_transactions = [transaction for transaction in self._transactions if ((transaction._transaction_date().month == date.month) and (not transaction.flag))]
+        if (len(interest_fees_transactions) > 0):
+            return False
+        else:
+            return True 
