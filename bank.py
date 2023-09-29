@@ -9,7 +9,7 @@ class Bank():
     def __init__(self) -> None:
         # List of all accounts in chronological order
         self._accounts = []
-    def _create_checking_account(self) -> None:
+    def _create_checking_account(self) -> int:
         """ Creates an instance of a Savings account object and appends it to the accounts list"""
         account_number = len(self._accounts) + 1
         new_checking_account = CheckingAccount(account_number)

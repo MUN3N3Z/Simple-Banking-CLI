@@ -4,7 +4,18 @@ from pickle import dump, load
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from utils import OverdrawError, TransactionSequenceError, TransactionLimitError
+import logging
 
+# Configure console logging
+logging.basicConfig(
+    # Set the minimum log level
+    level=logging.DEBUG, 
+    format='%(asctime)s|%(levelname)s|%(message)s',
+    datefmt='%m/%d/%Y %I:%M:%S',
+    handlers=[
+        logging.FileHandler('bank.log'),
+    ]
+)
 class BankCLI():
     """ Display menu options for banking services """
     def __init__(self) -> None:
@@ -30,7 +41,7 @@ class BankCLI():
             # Get user input and execute
             choice = input(">")
             command = self._choices.get(choice)
-            if (command):
+            if (command): 
                 command()
             else:
                 # Invalid user choice
@@ -80,9 +91,13 @@ class BankCLI():
         print("Type of account? (checking/savings)")
         account_type = input(">")
         if (account_type == "checking"):
-            self._bank._create_checking_account()
+            account_number = self._bank._create_checking_account()
+            logging.debug(f'Created account: {account_number:09d}')
+        elif (account_type == "savings"):
+            account_number = self._bank._create_savings_account()
+            logging.debug(f'Created account: {account_number:09d}')
         else:
-            self._bank._create_savings_account()
+            print("Please enter a valid account type")
         return
         
     def _summary(self):
@@ -120,7 +135,8 @@ class BankCLI():
         else:
             # Process the transaction with valid inputs
             try:
-                self._bank._transact(self._current_account, amount, date)            
+                self._bank._transact(self._current_account, amount, date)
+                logging.debug(f'Created transaction: {self._current_account:09d}, {amount}')     
             except OverdrawError:
                 print("This transaction could not be completed due to an insufficient account balance.")
             except TransactionSequenceError as e:
@@ -141,6 +157,7 @@ class BankCLI():
         """ Apply interest and fees to respective accounts """
         try:
             self._bank._apply_interest_fees(self._current_account)
+            logging.debug(f'Triggered interest and fees')
         except TransactionSequenceError as e:
             print(e)
         return 
@@ -150,12 +167,14 @@ class BankCLI():
         # Pickle bank object
         with open("bank.pkl", "wb") as file:
             dump(self._bank, file)
+            logging.debug(f'Saved to bank.pickle')
         return
     
     def _load(self):
         # Load pickled object
         with open("bank.pkl", "rb") as file:
             self._bank = load(file)
+            logging.debug(f'Loaded from bank.pickle')
         self._current_account = None
         return
     
@@ -164,4 +183,10 @@ class BankCLI():
         exit(0)
 
 if __name__ == "__main__":
-    BankCLI()._run()
+    # Catch unhandled non-system errors
+    try:
+        BankCLI()._run()
+    except (OverdrawError, TransactionSequenceError, TransactionLimitError) as e:
+        print("Sorry! Something unexpected happened. Check the logs or contact the developer for assistance.")
+        logging.error(repr(e))
+    exit(0)

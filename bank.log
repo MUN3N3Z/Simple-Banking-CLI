@@ -1,0 +1,5 @@
+09/29/2023 12:23:35|DEBUG|Loaded from bank.pickle
+09/29/2023 12:23:51|DEBUG|Created account: 000000003
+09/29/2023 12:24:18|DEBUG|Saved to bank.pickle
+09/29/2023 12:27:28|DEBUG|Loaded from bank.pickle
+09/29/2023 12:28:14|ERROR|OverdrawError: This transaction could not be completed due to an insufficient account balance.

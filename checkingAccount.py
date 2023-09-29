@@ -44,7 +44,7 @@ class CheckingAccount(Account):
                 self._balance += amount
                 self._register_transaction(amount, date, True)
         else:
-            raise TransactionSequenceError(self.check_transaction_date(date=date)[1])
+            raise TransactionSequenceError(self.check_transaction_date(date=date)[1], True)
         
 
     def _compute_interest_fees(self):
