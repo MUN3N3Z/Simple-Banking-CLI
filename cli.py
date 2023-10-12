@@ -5,22 +5,27 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from utils import OverdrawError, TransactionSequenceError, TransactionLimitError
 import logging
+from decimal import Decimal
+import sqlalchemy
+from sqlalchemy.orm.session import sessionmaker
+from account import Account
+from transaction import Transaction
+from database import Base
 
 # Configure console logging
 logging.basicConfig(
     # Set the minimum log level
     level=logging.DEBUG, 
     format='%(asctime)s|%(levelname)s|%(message)s',
-    datefmt='%m/%d/%Y %I:%M:%S',
+    datefmt='%Y-%m-%d %I:%M:%S',
     handlers=[
         logging.FileHandler('bank.log'),
     ]
 )
+
 class BankCLI():
     """ Display menu options for banking services """
     def __init__(self) -> None:
-        # Create an instance of a bank to handle operations
-        self._bank = Bank()
         self._choices = {
             "1": self._open_account,
             "2": self._summary,
@@ -28,13 +33,22 @@ class BankCLI():
             "4": self._add_transaction,
             "5": self._list_transactions,
             "6": self._interest_and_fees,
-            "7": self._save,
-            "8": self._load,
-            "9": self._quit,
+            "7": self._quit,
         }
         # Selected account number
         self._current_account = None
-    def _run(self):
+        # SQL db session
+        self.session = Session()
+        # Get bank from db
+        self._bank = self.session.query(Bank).first()
+        logging.debug(f'Loaded from bank.db')
+        # Create and add Bank instance to db if not found
+        if (not self._bank):
+            self._bank = Bank()
+            self.session.add(self._bank)
+            self.session.commit()
+            logging.debug(f'Saved to bank.db')
+    def run(self):
         """ Display menu and respond to choices"""
         while (True):
             self._display_menu()
@@ -57,12 +71,10 @@ class BankCLI():
             "add transaction",
             "list transactions",
             "interest and fees",
-            "save",
-            "load",
             "quit",
         ]
         try:
-            account = self._bank._find_account(self._current_account)
+            account = self._bank.find_account(self._current_account)
         except IndexError:
             account = self._current_account = None
             print("Please enter a valid account number.")
@@ -70,10 +82,10 @@ class BankCLI():
             print("--------------------------------")
             # Display currently selected account
             if (self._current_account):
-                if (isinstance(self._bank._find_account(self._current_account), (CheckingAccount))):
-                    print("Currently selected account: Checking#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank._account_balance(self._current_account):,.2f}'))
+                if (isinstance(self._bank.find_account(self._current_account), (CheckingAccount))):
+                    print("Currently selected account: Checking#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank.account_balance(self._current_account):,.2f}'))
                 else:
-                    print("Currently selected account: Savings#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank._account_balance(self._current_account):,.2f}'))  
+                    print("Currently selected account: Savings#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank.account_balance(self._current_account):,.2f}'))  
             else:
                 print("Currently selected account: None")
             # Display menu items
@@ -91,17 +103,24 @@ class BankCLI():
         print("Type of account? (checking/savings)")
         account_type = input(">")
         if (account_type == "checking"):
-            account_number = self._bank._create_checking_account()
-            logging.debug(f'Created account: {account_number:09d}')
+            account_number = self._bank.create_checking_account(self.session)
+            logging.debug(f'Created account: {account_number}')
+            # Save new account 
+            self.session.commit()
+            logging.debug(f'Saved to bank.db')
         elif (account_type == "savings"):
-            account_number = self._bank._create_savings_account()
-            logging.debug(f'Created account: {account_number:09d}')
+            account_number = self._bank.create_savings_account(self.session)
+            logging.debug(f'Created account: {account_number}')
+            # Save new account 
+            self.session.commit()
+            logging.debug(f'Saved to bank.db')
         else:
             print("Please enter a valid account type")
+        
         return
         
     def _summary(self):
-        self._bank._summarize_accounts()
+        self._bank.summarize_accounts()
         return
     
     def _select_account(self) -> None:
@@ -135,20 +154,23 @@ class BankCLI():
         else:
             # Process the transaction with valid inputs
             try:
-                self._bank._transact(self._current_account, amount, date)
-                logging.debug(f'Created transaction: {self._current_account:09d}, {amount}')     
+                logging.debug(f'Created transaction: {self._current_account}, {amount}')     
+                self._bank.transact(self._current_account, amount, date, self.session)
+                # Save new transaction
+                self.session.commit()
+                logging.debug(f'Saved to bank.db')
             except OverdrawError:
                 print("This transaction could not be completed due to an insufficient account balance.")
-            except TransactionSequenceError as e:
-                print(e)
             except TransactionLimitError as e2:
                 print(e2)
+            except TransactionSequenceError as e:
+                print(e)
         return
         
     def _list_transactions(self):
         """ Print out all transactions for an account, sorted by date """
         try:
-            self._bank._list_transactions(self._current_account)
+            self._bank.list_transactions(self._current_account)
         except TypeError:
             print("This command requires that you first select an account.")
         return
@@ -156,27 +178,22 @@ class BankCLI():
     def _interest_and_fees(self):
         """ Apply interest and fees to respective accounts """
         try:
-            self._bank._apply_interest_fees(self._current_account)
+            self._bank.apply_interest_fees(self._current_account, self.session)
+            if (isinstance(self._bank.find_account(self._current_account), (CheckingAccount))):
+                # Log interest
+                logging.debug(f'Created transaction: {self._current_account}, {(Decimal(0.0008) * (self._bank.find_account(self._current_account).balance)).quantize(Decimal("0.00"))}') 
+            else:
+                # Log interest
+                logging.debug(f'Created transaction: {self._current_account}, {(Decimal(0.0041) * (self._bank.find_account(self._current_account).balance)).quantize(Decimal("0.00"))}') 
             logging.debug(f'Triggered interest and fees')
+            # Save new interest/fees transaction 
+            self.session.commit()
+            logging.debug(f'Saved to bank.db')
         except TransactionSequenceError as e:
             print(e)
         return 
     
-    def _save(self):
-        """ Pickle the bank object """
-        # Pickle bank object
-        with open("bank.pkl", "wb") as file:
-            dump(self._bank, file)
-            logging.debug(f'Saved to bank.pickle')
-        return
-    
-    def _load(self):
-        # Load pickled object
-        with open("bank.pkl", "rb") as file:
-            self._bank = load(file)
-            logging.debug(f'Loaded from bank.pickle')
-        self._current_account = None
-        return
+    # Save/Load functions are obsolete now that we have a db
     
     def _quit(self):
         """ Leave the CLI """
@@ -185,7 +202,18 @@ class BankCLI():
 if __name__ == "__main__":
     # Catch unhandled non-system errors
     try:
-        BankCLI()._run()
+        # Connect to the database
+        engine = sqlalchemy.create_engine("sqlite:///bank.db")
+        # Create SQL tables based on OOP models
+        # if the tables already exist, this does nothing (even if there was a change)
+        Base.metadata.create_all(engine)
+        # Session factory
+        Session = sessionmaker(bind=engine)
+
+        BankCLI().run()
+    except (EOFError):
+        print("Sorry! Something unexpected happened. Check the logs or contact the developer for assistance.")
+        logging.error("EOFError: 'EOF when reading a line'")
     except (OverdrawError, TransactionSequenceError, TransactionLimitError) as e:
         print("Sorry! Something unexpected happened. Check the logs or contact the developer for assistance.")
         logging.error(repr(e))
