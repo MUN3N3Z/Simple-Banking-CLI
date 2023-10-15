@@ -1,14 +1,15 @@
-from bank import Bank
-from checkingAccount import CheckingAccount
-from pickle import dump, load
-from decimal import Decimal, InvalidOperation
-from datetime import datetime
-from utils import OverdrawError, TransactionSequenceError, TransactionLimitError
+# OS - MacOS
+import tkinter as tk
 import logging
-from decimal import Decimal
 import sqlalchemy
-from sqlalchemy.orm.session import sessionmaker
 from database import Base
+from sqlalchemy.orm.session import sessionmaker
+from utils import OverdrawError, TransactionSequenceError, TransactionLimitError
+from bank import Bank
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+from savingsAccount import SavingsAccount
+from checkingAccount import CheckingAccount
 
 # Configure console logging
 logging.basicConfig(
@@ -21,18 +22,13 @@ logging.basicConfig(
     ]
 )
 
-class BankCLI():
-    """ Display menu options for banking services """
+class BankGUI:
+    """ Display a bank menu and respond to choices when run """
     def __init__(self) -> None:
-        self._choices = {
-            "1": self._open_account,
-            "2": self._summary,
-            "3": self._select_account,
-            "4": self._add_transaction,
-            "5": self._list_transactions,
-            "6": self._interest_and_fees,
-            "7": self._quit,
-        }
+        # Initialize new bank gui window
+        self._window = tk.Tk()
+        self._window.title("MY BANK")
+
         # Selected account number
         self._current_account = None
         # SQL db session
@@ -46,80 +42,69 @@ class BankCLI():
             self.session.add(self._bank)
             self.session.commit()
             logging.debug(f'Saved to bank.db')
-    def run(self):
-        """ Display menu and respond to choices"""
-        while (True):
-            self._display_menu()
-            # Get user input and execute
-            choice = input(">")
-            command = self._choices.get(choice)
-            if (command): 
-                command()
-            else:
-                # Invalid user choice
-                print("{0} is not a valid choice.".format(choice))
 
-    
-    def _display_menu(self) -> None:
-        command_items = [
-            "Enter command",
-            "open account",
-            "summary",
-            "select account",
-            "add transaction",
-            "list transactions",
-            "interest and fees",
-            "quit",
-        ]
-        try:
-            account = self._bank.find_account(self._current_account)
-        except IndexError:
-            account = self._current_account = None
-            print("Please enter a valid account number.")
-        finally:
-            print("--------------------------------")
-            # Display currently selected account
-            if (self._current_account):
-                if (isinstance(self._bank.find_account(self._current_account), (CheckingAccount))):
-                    print("Currently selected account: Checking#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank.account_balance(self._current_account):,.2f}'))
-                else:
-                    print("Currently selected account: Savings#{0},\tbalance: ${1}".format(f'{self._current_account:09d}', f'{self._bank.account_balance(self._current_account):,.2f}'))  
-            else:
-                print("Currently selected account: None")
-            # Display menu items
-            for i,j in enumerate(command_items):
-                if (i == 0):
-                    # Print first non-command without index
-                    print(command_items[0])
-                else:
-                    # Print rest of command options with indices
-                    print(f"{i}: {j}")
-        return
+        # Window options frame
+        self._options_frame = tk.Frame(self._window)
 
+        # Option frame buttons
+        tk.Button(self._options_frame, 
+                  text="Open Account",
+                  command=self._open_account).grid(row=1, column=1)
+        tk.Button(self._options_frame,
+                  text="Select Account",
+                  command=self._select_account).grid(row=1, column=2)
+        tk.Button(self._options_frame,
+                  text="Add Transaction",
+                  command=self._add_transaction).grid(row=1, column=3)
+        tk.Button(self._options_frame,
+                  text="Interest and Fees",
+                  command=self._interest_and_fees).grid(row=1, column=4)
+        
+        self._options_frame.grid(row=0, column=1, columnspan=2)
+        
+        # Account summaries will be displayed here
+        self._listbox = None
+        self._display_accounts()
+
+        self._window.mainloop()
+        
     def _open_account(self) -> None:
         """ Either open a savings or checkings account """
-        print("Type of account? (checking/savings)")
-        account_type = input(">")
-        if (account_type == "checking"):
-            account_number = self._bank.create_checking_account(self.session)
-            logging.debug(f'Created account: {account_number}')
-            # Save new account 
-            self.session.commit()
-            logging.debug(f'Saved to bank.db')
-        elif (account_type == "savings"):
-            account_number = self._bank.create_savings_account(self.session)
-            logging.debug(f'Created account: {account_number}')
-            # Save new account 
-            self.session.commit()
-            logging.debug(f'Saved to bank.db')
-        else:
-            print("Please enter a valid account type")
-        
+        popup = tk.Toplevel(self._window)
+        popup.title("Open a new account")
+        # Variable to store the selected option
+        selected_option = tk.IntVar()
+        # Radio buttons
+        option1 = tk.Radiobutton(popup, text="Checking Account", variable=selected_option, value=1)
+        option2 = tk.Radiobutton(popup, text="Savings Account", variable=selected_option, value=2)
+        option1.pack()
+        option2.pack()
+        # Enter and Cancel buttons
+        enter_button = tk.Button(popup, text="Enter", command=lambda:on_enter(popup, selected_option))
+        cancel_button = tk.Button(popup, text="Cancel", command=popup.destroy)
+        enter_button.pack()
+        cancel_button.pack()
+        # Callback button
+        def on_enter(popup, selected_options):
+            # Open checking account
+            if selected_option.get() == 1:
+                account_number = self._bank.create_checking_account(self.session)
+                logging.debug(f'Created account: {account_number}')
+                # Save new account 
+                self.session.commit()
+                logging.debug(f'Saved to bank.db')
+            # Open savings account
+            else:
+                account_number = self._bank.create_savings_account(self.session)
+                logging.debug(f'Created account: {account_number}')
+                # Save new account 
+                self.session.commit()
+                logging.debug(f'Saved to bank.db')
+            # Refresh accounts
+            self._display_accounts()
+            popup.destroy()
         return
-        
-    def _summary(self):
-        self._bank.summarize_accounts()
-        return
+
     
     def _select_account(self) -> None:
         """ Select an individual account """
@@ -129,7 +114,7 @@ class BankCLI():
         except (ValueError):
             print("Please enter a valid account number.")
         return
-
+    
     def _add_transaction(self) -> None:
         """ Register a transaction with selected account """
         # Get user input for transaction details
@@ -163,16 +148,8 @@ class BankCLI():
                 print(e2)
             except TransactionSequenceError as e:
                 print(e)
-        return
-        
-    def _list_transactions(self):
-        """ Print out all transactions for an account, sorted by date """
-        try:
-            self._bank.list_transactions(self._current_account)
-        except TypeError:
-            print("This command requires that you first select an account.")
-        return
-
+            return
+    
     def _interest_and_fees(self):
         """ Apply interest and fees to respective accounts """
         try:
@@ -190,11 +167,21 @@ class BankCLI():
         except TransactionSequenceError as e:
             print(e)
         return 
-    # Save/Load functions are obsolete now that we have a db
     
-    def _quit(self):
-        """ Leave the CLI """
-        exit(0)
+    def _display_accounts(self):
+        """ Display a list of accounts and their balances """
+        if (self._listbox):
+            self._listbox.destroy()
+            print("Refreshed")
+        account_summaries = self._bank._show_accounts()
+        variable = tk.StringVar(value=account_summaries)
+        # Create a Listbox to display the list
+        self._listbox = tk.Listbox(self._options_frame, listvariable=variable)
+        self._listbox.grid(row=1, column=5)
+        self._listbox.config(width=30)
+        print(account_summaries)
+        return
+
 
 if __name__ == "__main__":
     # Catch unhandled non-system errors
@@ -207,7 +194,7 @@ if __name__ == "__main__":
         # Session factory
         Session = sessionmaker(bind=engine)
 
-        BankCLI().run()
+        BankGUI()
     except (EOFError):
         print("Sorry! Something unexpected happened. Check the logs or contact the developer for assistance.")
         logging.error("EOFError: 'EOF when reading a line'")
