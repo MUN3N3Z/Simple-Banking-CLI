@@ -47,12 +47,20 @@ class Bank(Base):
         if (account_number):
             return self._accounts[account_number - 1]
     
-    def _print_account_summary(self, account_number:int) -> str:
+    def _print_account_summary(self, account_number:int) -> None:
         """ Print account types, numbers and balances """
         if (isinstance(self._accounts[account_number - 1], (CheckingAccount))):
-            return("Checking#{0}, balance: ${1}".format(f'{account_number:09d}', f'{self.account_balance(account_number):,.2f}'))
+            print("Checking#{0},\tbalance: ${1}".format(f'{account_number:09d}', f'{self.account_balance(account_number):,.2f}'))
         else:
-            return("Savings#{0}, balance: ${1}".format(f'{account_number:09d}', f'{self.account_balance(account_number):,.2f}'))   
+            print("Savings#{0},\tbalance: ${1}".format(f'{account_number:09d}', f'{self.account_balance(account_number):,.2f}'))   
+        return
+    
+    def _return_account_summary(self, account_number:int) -> str:
+        """ Returns account types, numbers and balances """
+        if (isinstance(self._accounts[account_number - 1], (CheckingAccount))):
+            return("Checking#{0},\tbalance: ${1}".format(f'{account_number:09d}', f'{self.account_balance(account_number):,.2f}'))
+        else:
+            return("Savings#{0},\tbalance: ${1}".format(f'{account_number:09d}', f'{self.account_balance(account_number):,.2f}'))   
 
     def summarize_accounts(self) -> None:
         """ Print account types, numbers and balances for all accounts"""
@@ -65,11 +73,16 @@ class Bank(Base):
         return
     
     def list_transactions(self, account_number:int) -> None:
+        """ Print transactions for given account """
         self._accounts[account_number - 1].print_transactions()
 
-    def _show_accounts(self) -> list:
+    def return_transactions(self, account_number:int) -> list:
+        """ Return a list of transaction tuples for given account -> [(transaction summary, transaction_value_flag)] """
+        return self._accounts[account_number - 1].list_transactions()
+
+    def return_accounts(self) -> list:
         """ Returns a list of account summaries """
-        account_summaries = [self._print_account_summary(account.get_account_number()) for account in self._accounts]
+        account_summaries = [self._return_account_summary(account.get_account_number()) for account in self._accounts]
         return account_summaries
 
 

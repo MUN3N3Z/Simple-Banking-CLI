@@ -39,13 +39,14 @@ class BankCLI():
         self.session = Session()
         # Get bank from db
         self._bank = self.session.query(Bank).first()
-        logging.debug(f'Loaded from bank.db')
         # Create and add Bank instance to db if not found
         if (not self._bank):
             self._bank = Bank()
             self.session.add(self._bank)
             self.session.commit()
             logging.debug(f'Saved to bank.db')
+        else:
+            logging.debug(f'Loaded from bank.db')
     def run(self):
         """ Display menu and respond to choices"""
         while (True):
@@ -179,10 +180,10 @@ class BankCLI():
             self._bank.apply_interest_fees(self._current_account, self.session)
             if (isinstance(self._bank.find_account(self._current_account), (CheckingAccount))):
                 # Log interest
-                logging.debug(f'Created transaction: {self._current_account}, {(Decimal(0.0008) * (self._bank.find_account(self._current_account).balance)).quantize(Decimal("0.00"))}') 
+                logging.debug(f'Created transaction: {self._current_account}, {(Decimal(0.0008) * (self._bank.find_account(self._current_account).balance))}') 
             else:
                 # Log interest
-                logging.debug(f'Created transaction: {self._current_account}, {(Decimal(0.0041) * (self._bank.find_account(self._current_account).balance)).quantize(Decimal("0.00"))}') 
+                logging.debug(f'Created transaction: {self._current_account}, {(Decimal(0.0041) * (self._bank.find_account(self._current_account).balance))}') 
             logging.debug(f'Triggered interest and fees')
             # Save new interest/fees transaction 
             self.session.commit()

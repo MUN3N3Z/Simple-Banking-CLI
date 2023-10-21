@@ -39,7 +39,10 @@ class Account(Base):
         """ Display all recorded transactions for the acount """
         self._transactions.sort()
         for transaction in self._transactions:
-            print(transaction)
+            print(transaction.__str__()[0])
+    def list_transactions(self) -> list:
+        """ Return a list of transaction tuples for given account -> [(transaction summary, transaction_value_flag)] """
+        return [transaction.__str__() for transaction in self._transactions]
 
     def register_transaction(self, amount:Decimal, date:datetime, flag:bool, session) -> None:
         """ Update account's transactio history """

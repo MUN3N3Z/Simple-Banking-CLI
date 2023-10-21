@@ -5,8 +5,7 @@ from collections import defaultdict
 from account import Account
 from utils import OverdrawError, TransactionSequenceError, TransactionLimitError
 from sqlalchemy import Integer, Column, ForeignKey
-from collections import Counter
-
+from typing import List
 class SavingsAccount(Account):
     """Accounts with more interest and more transactions limits"""
     # Create a "savings_account" table
@@ -30,22 +29,20 @@ class SavingsAccount(Account):
     @property
     def account_number(self):
         return super().get_account_number()
-    def _check_date_limit(self, date, transactions: list[Transaction]):
+    def _check_date_limit(self, date, transactions: List[Transaction]):
         # Count number of transactions on "date"
         number_of_transactions = 0
         for transaction in transactions:
             if (transaction.transaction_date().date() == date):
                 number_of_transactions += 1
-        print(number_of_transactions)
         return (number_of_transactions < 2)
         
-    def _check_month_limit(self, date, transactions:list[Transaction]):
+    def _check_month_limit(self, date, transactions:List[Transaction]):
         # Count number of transactions on "date".month
         number_of_transactions = 0
         for i in transactions:
             if (i.transaction_date().month == date.month and i.transaction_date().year == date.year):
                 number_of_transactions += 1
-        print(number_of_transactions)
         return (number_of_transactions < 5)
     
     def process_transaction(self, amount:decimal.Decimal, date, session) -> None:
